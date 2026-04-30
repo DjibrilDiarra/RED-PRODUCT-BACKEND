@@ -1,7 +1,8 @@
 const fs = require('fs')
+const path = require('path')
 const Hotel = require('../models/Hotel')
 
-//  CREER HOTEL
+// CREER HOTEL
 exports.creerHotel = async (req, res) => {
     try {
         console.log("BODY:", req.body)
@@ -12,13 +13,16 @@ exports.creerHotel = async (req, res) => {
             adresse: req.body.adresse,
             prix: req.body.prix,
             image: req.file
-            ? `${process.env.BASE_URL}/uploads/${req.file.filename}`
-            : null
+                ? `${process.env.BASE_URL}/uploads/${req.file.filename}`
+                : null
         })
 
         await hotel.save()
 
+        console.log("IMAGE URL:", hotel.image)
+
         res.json(hotel)
+
     } catch (err) {
         console.log(err)
         res.status(500).json({ error: err.message })
@@ -37,7 +41,7 @@ exports.listerHotels = async (req, res) => {
 }
 
 
-//  GET 1 HOTEL
+// Ajouter HOTEL
 exports.getHotel = async (req, res) => {
     try {
         const hotel = await Hotel.findById(req.params.id)
@@ -47,6 +51,7 @@ exports.getHotel = async (req, res) => {
         }
 
         res.json(hotel)
+
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
@@ -62,15 +67,22 @@ exports.supprimerHotel = async (req, res) => {
             return res.status(404).json({ message: "Hôtel introuvable" })
         }
 
-        // supprimer image si elle existe
+        // SUPPRESSION IMAGE PROPRE (PRODUCTION SAFE)
         if (hotel.image) {
-            const filePath = hotel.image.replace("http://localhost:5000/", "")
+            const imageUrl = hotel.image
 
-            fs.unlink(filePath, (err) => {
+            const filePath = imageUrl.replace(
+                `${process.env.BASE_URL}/`,
+                ""
+            )
+
+            const fullPath = path.join(__dirname, "../", filePath)
+
+            fs.unlink(fullPath, (err) => {
                 if (err) {
                     console.log("Erreur suppression image :", err.message)
                 } else {
-                    console.log("Image supprimée :", filePath)
+                    console.log("Image supprimée :", fullPath)
                 }
             })
         }
@@ -78,6 +90,7 @@ exports.supprimerHotel = async (req, res) => {
         await Hotel.findByIdAndDelete(req.params.id)
 
         res.json({ message: "Hôtel supprimé avec succès" })
+
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
