@@ -1,7 +1,8 @@
 const express = require('express')
 const cors = require('cors')
-const mongoose = require('mongoose')      
-require('dotenv').config()                
+const mongoose = require('mongoose')
+const path = require('path')
+require('dotenv').config()
 
 const router = require('./route/route')
 
@@ -9,23 +10,19 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
-app.use(express.urlencoded({ extended: true })) 
+app.use(express.urlencoded({ extended: true }))
 
-// IMPORTANT POUR LES IMAGES
-app.use('/uploads', express.static('uploads'))
+// FIX IMPORTANT POUR LES IMAGES (PRODUCTION SAFE)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 app.use(router)
 
-//  CONNEXION MONGO
+// MONGODB
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log(" MongoDB connecté"))
-    .catch(err => console.log("Erreur Mongo :", err))
+  .then(() => console.log("MongoDB connecté"))
+  .catch(err => console.log(err))
 
-
-app.listen(5000, () => {
-    console.log("Serveur actif : http://localhost:5000")
-})
-
-app.get('/test', (req, res) => {
-    res.json({ ok: true })
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => {
+  console.log("Serveur actif :", PORT)
 })

@@ -4,31 +4,29 @@ const Hotel = require('../models/Hotel')
 
 // CREER HOTEL
 exports.creerHotel = async (req, res) => {
-    try {
-        console.log("BODY:", req.body)
-        console.log("FILE:", req.file)
+  try {
 
-        const hotel = new Hotel({
-            nom: req.body.nom,
-            adresse: req.body.adresse,
-            prix: req.body.prix,
-            image: req.file
-                ? `${process.env.BASE_URL}/uploads/${req.file.filename}`
-                : null
-        })
+    const imageUrl = req.file
+      ? `${process.env.BASE_URL}/uploads/${req.file.filename}`
+      : null
 
-        await hotel.save()
+    const hotel = new Hotel({
+      nom: req.body.nom,
+      adresse: req.body.adresse,
+      prix: req.body.prix,
+      image: imageUrl
+    })
 
-        console.log("IMAGE URL:", hotel.image)
+    await hotel.save()
 
-        res.json(hotel)
+    console.log("IMAGE OK :", imageUrl)
 
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ error: err.message })
-    }
+    res.json(hotel)
+
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 }
-
 
 // LISTER HOTELS
 exports.listerHotels = async (req, res) => {
