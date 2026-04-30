@@ -12,8 +12,8 @@ exports.creerHotel = async (req, res) => {
             adresse: req.body.adresse,
             prix: req.body.prix,
             image: req.file
-                ? `http://localhost:5000/uploads/${req.file.filename}`
-                : null
+            ? `${process.env.BASE_URL}/uploads/${req.file.filename}`
+            : null
         })
 
         await hotel.save()
@@ -62,7 +62,7 @@ exports.supprimerHotel = async (req, res) => {
             return res.status(404).json({ message: "Hôtel introuvable" })
         }
 
-        // 🔥 supprimer image si elle existe
+        // supprimer image si elle existe
         if (hotel.image) {
             const filePath = hotel.image.replace("http://localhost:5000/", "")
 
