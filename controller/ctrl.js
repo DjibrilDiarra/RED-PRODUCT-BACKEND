@@ -75,12 +75,15 @@ exports.inscription = async (req, res) => {
         })
 
     } catch (err) {
-        console.error("INSCRIPTION ERROR:", err)
-        return res.status(500).json({
-            message: "Erreur serveur",
-            error: err.message
-        })
-    }
+    console.error("🔥 FULL ERROR INSCRIPTION:", err)
+    console.error("🔥 STACK:", err.stack)
+
+    return res.status(500).json({
+        message: "Erreur serveur",
+        error: err.message,
+        stack: err.stack
+    })
+}
 }
 
 
