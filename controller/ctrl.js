@@ -22,7 +22,7 @@ exports.inscription = async (req, res) => {
 
         const verificationToken = crypto.randomBytes(32).toString("hex")
 
-        //  IMPORTANT: PAS DE HASH ICI
+        // CREATE USER (password hash via model)
         await User.create({
             nom,
             email,
@@ -33,7 +33,7 @@ exports.inscription = async (req, res) => {
 
         console.log("USER CRÉÉ ✔")
 
-        // ================= EMAIL =================
+        // EMAIL (BREVO)
         try {
             await axios.post(
                 "https://api.brevo.com/v3/smtp/email",
@@ -50,7 +50,7 @@ exports.inscription = async (req, res) => {
                             <p>Clique pour activer ton compte :</p>
 
                             <a href="${process.env.BASE_URL}/verify/${verificationToken}"
-                               style="padding:10px 15px;background:green;color:white;text-decoration:none">
+                               style="display:inline-block;padding:10px 15px;background:green;color:white;text-decoration:none;border-radius:5px">
                                 Activer mon compte
                             </a>
                         </div>
@@ -85,6 +85,7 @@ exports.inscription = async (req, res) => {
 
 
 // ================= VERIFICATION EMAIL =================
+
 exports.verifyAccount = async (req, res) => {
     try {
         const { token } = req.params
@@ -102,6 +103,7 @@ exports.verifyAccount = async (req, res) => {
 
         console.log("COMPTE ACTIVÉ ✔")
 
+        // REDIRECTION FRONT PROPRE
         return res.redirect(`${process.env.FRONT_URL}/connexion.html`)
 
     } catch (err) {
@@ -110,9 +112,7 @@ exports.verifyAccount = async (req, res) => {
     }
 }
 
-
 // ================= CONNEXION =================
-
 exports.connexion = async (req, res) => {
     try {
         const { email, password } = req.body
@@ -148,6 +148,9 @@ exports.connexion = async (req, res) => {
 
     } catch (err) {
         console.log("LOGIN ERROR:", err)
-        return res.status(500).json({ message: "Erreur serveur" })
+        return res.status(500).json({
+            message: "Erreur serveur",
+            error: err.message
+        })
     }
 }
