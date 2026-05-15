@@ -1,13 +1,12 @@
 const User = require("../models/user")
-const bcrypt = require("bcrypt")
-const jwt = require("jsonwebtoken")
 const crypto = require("crypto")
 const axios = require("axios")
+const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken")
 
 // ================= INSCRIPTION =================
-
 exports.inscription = async (req, res) => {
-    console.log("ROUTE INSCRIPTION APPELÉE")
+    console.log("INSCRIPTION ROUTE OK")
 
     try {
         const { nom, email, password } = req.body
@@ -16,56 +15,42 @@ exports.inscription = async (req, res) => {
             return res.status(400).json({ message: "Champs manquants" })
         }
 
-        // Vérifier email
         const exist = await User.findOne({ email })
         if (exist) {
             return res.status(400).json({ message: "Email déjà utilisé" })
         }
 
-        // Hash password
-        const hash = await bcrypt.hash(password, 10)
-
-        // Token verification
         const verificationToken = crypto.randomBytes(32).toString("hex")
 
-        // Create user
+        //  IMPORTANT: PAS DE HASH ICI
         await User.create({
             nom,
             email,
-            password: hash,
+            password,
             verificationToken,
             isVerified: false
         })
 
         console.log("USER CRÉÉ ✔")
 
-        // ================= EMAIL BREVO =================
-
+        // ================= EMAIL =================
         try {
-            console.log("ENVOI EMAIL BREVO...")
-
-            const response = await axios.post(
+            await axios.post(
                 "https://api.brevo.com/v3/smtp/email",
                 {
                     sender: {
                         name: "RED PRODUCT",
                         email: "djibrildiarra470@gmail.com"
                     },
-
                     to: [{ email }],
-
                     subject: "Active ton compte RED PRODUCT",
-
                     htmlContent: `
                         <div style="font-family:Arial">
                             <h2>Bienvenue ${nom}</h2>
-
-                            <p>Merci pour ton inscription.</p>
-
-                            <p>Active ton compte en cliquant ici :</p>
+                            <p>Clique pour activer ton compte :</p>
 
                             <a href="${process.env.BASE_URL}/verify/${verificationToken}"
-                               style="display:inline-block;padding:12px 20px;background:green;color:white;text-decoration:none;border-radius:5px">
+                               style="padding:10px 15px;background:green;color:white;text-decoration:none">
                                 Activer mon compte
                             </a>
                         </div>
@@ -80,10 +65,9 @@ exports.inscription = async (req, res) => {
             )
 
             console.log("EMAIL ENVOYÉ ✔")
-            console.log(response.data)
 
-        } catch (brevoError) {
-            console.log("ERREUR BREVO :", brevoError.response?.data || brevoError.message)
+        } catch (err) {
+            console.log("EMAIL ERROR:", err.response?.data || err.message)
         }
 
         return res.status(201).json({
@@ -91,14 +75,16 @@ exports.inscription = async (req, res) => {
         })
 
     } catch (err) {
-        console.log("Erreur inscription :", err)
-        return res.status(500).json({ message: "Erreur serveur" })
+        console.error("INSCRIPTION ERROR:", err)
+        return res.status(500).json({
+            message: "Erreur serveur",
+            error: err.message
+        })
     }
 }
 
 
 // ================= VERIFICATION EMAIL =================
-
 exports.verifyAccount = async (req, res) => {
     try {
         const { token } = req.params
@@ -119,7 +105,7 @@ exports.verifyAccount = async (req, res) => {
         return res.redirect(`${process.env.FRONT_URL}/connexion.html`)
 
     } catch (err) {
-        console.log(err)
+        console.log("VERIFY ERROR:", err)
         return res.status(500).json({ message: "Erreur serveur" })
     }
 }
@@ -151,7 +137,7 @@ exports.connexion = async (req, res) => {
 
         const token = jwt.sign(
             { id: user._id },
-            process.env.JWT_SECRET || "SECRET_KEY",
+            process.env.JWT_SECRET,
             { expiresIn: "1d" }
         )
 
@@ -161,7 +147,7 @@ exports.connexion = async (req, res) => {
         })
 
     } catch (err) {
-        console.log("Erreur connexion :", err)
+        console.log("LOGIN ERROR:", err)
         return res.status(500).json({ message: "Erreur serveur" })
     }
 }

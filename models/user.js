@@ -1,15 +1,18 @@
-const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
+const mongoose = require("mongoose")
+const bcrypt = require("bcrypt")
 
 const userSchema = new mongoose.Schema({
-    nom: String,
+    nom: { type: String, required: true },
 
     email: {
         type: String,
-        unique: true
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true
     },
 
-    password: String,
+    password: { type: String, required: true },
 
     isVerified: {
         type: Boolean,
@@ -19,22 +22,17 @@ const userSchema = new mongoose.Schema({
     verificationToken: String,
 
     resetToken: String,
-
     resetTokenExpire: Date,
 })
 
-// HASH PASSWORD avant sauvegarde
-userSchema.pre("save", async function(next) {
-
-    if (!this.isModified("password")) {
-        return next()
-    }
+// HASH PASSWORD UNIQUEMENT ICI
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next()
 
     const salt = await bcrypt.genSalt(10)
-
     this.password = await bcrypt.hash(this.password, salt)
 
     next()
 })
 
-module.exports = mongoose.model('User', userSchema)
+module.exports = mongoose.model("User", userSchema)
