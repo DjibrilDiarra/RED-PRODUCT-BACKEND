@@ -5,8 +5,17 @@ const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 
 // ================= INSCRIPTION =================
+
+
 exports.inscription = async (req, res) => {
     console.log("INSCRIPTION ROUTE OK")
+
+    console.log(" BODY REÇU:", req.body)
+console.log(" ENV:", {
+    MONGO: !!process.env.MONGO_URI,
+    BREVO: !!process.env.BREVO_API_KEY,
+    BASE_URL: process.env.BASE_URL
+})
 
     try {
         const { nom, email, password } = req.body
