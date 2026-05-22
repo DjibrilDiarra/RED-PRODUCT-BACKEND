@@ -95,27 +95,32 @@ exports.verifyAccount = async (req, res) => {
         console.log("TOKEN REÇU:", token)
 
         const user = await User.findOne({
-            verificationToken: token.trim()
+            verificationToken: token
         })
 
-        console.log("USER TROUVÉ:", user)
+        
+        if (user) {
+            user.isVerified = true
+            user.verificationToken = undefined
 
-        if (!user) {
-            return res.status(400).json({
-                message: "Lien invalide ou déjà utilisé"
-            })
+            await user.save()
+
+            console.log("COMPTE ACTIVÉ ✔")
+
+            return res.redirect(`${process.env.FRONT_URL}/connexion.html`)
         }
 
-        user.isVerified = true
-        user.verificationToken = undefined
+       
+        const alreadyUser = await User.findOne({ email: req.body?.email })
 
-        await user.save()
+        if (user.isVerified) {
+        return res.json({ message: "Compte déjà activé ✔" })
+        }
 
-        console.log("COMPTE ACTIVÉ ✔")
-
-        return res.redirect(
-            `${process.env.FRONT_URL}/connexion.html`
-        )
+       
+        return res.status(400).json({
+            message: "Lien invalide ou déjà utilisé"
+        })
 
     } catch (err) {
         console.error("VERIFY ERROR:", err)
