@@ -19,8 +19,8 @@ exports.inscription = async (req, res) => {
             })
         }
 
-        // 🔥 VALIDATION MOT DE PASSE AJOUTÉE
-        if (!password || password.trim().length < 4) {
+        // 🔥 validation password
+        if (password.trim().length < 4) {
             return res.status(400).json({
                 message: "Mot de passe trop court"
             })
@@ -52,6 +52,8 @@ exports.inscription = async (req, res) => {
         // ================= EMAIL =================
         try {
             const verifyUrl = `${process.env.BASE_URL}/verify/${verificationToken}`
+
+            console.log("VERIFY URL:", verifyUrl)
 
             await axios.post(
                 "https://api.brevo.com/v3/smtp/email",
@@ -100,6 +102,8 @@ exports.inscription = async (req, res) => {
     }
 }
 
+ // ================= VERIFICATION EMAIL =================
+
 exports.verifyAccount = async (req, res) => {
     try {
         const { token } = req.params
@@ -124,8 +128,9 @@ exports.verifyAccount = async (req, res) => {
 
         console.log("COMPTE ACTIVÉ ✔")
 
+        // ✅ REDIRECTION PROPRE (IMPORTANT)
         return res.redirect(
-            `${process.env.FRONT_URL}/connexion.html`
+            `${process.env.FRONT_URL}/connexion`
         )
 
     } catch (err) {
@@ -135,6 +140,8 @@ exports.verifyAccount = async (req, res) => {
         })
     }
 }
+
+ // ================= CONNEXTION =================
 
 exports.connexion = async (req, res) => {
     try {
