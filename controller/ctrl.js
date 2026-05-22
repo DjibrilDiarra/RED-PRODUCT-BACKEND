@@ -130,7 +130,7 @@ exports.verifyAccount = async (req, res) => {
 
         // ✅ REDIRECTION PROPRE (IMPORTANT)
         return res.redirect(
-            `${process.env.FRONT_URL}/connexion`
+            `${process.env.FRONT_URL}/connexion.html`
         )
 
     } catch (err) {
