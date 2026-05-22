@@ -12,19 +12,30 @@ exports.inscription = async (req, res) => {
     try {
         const { nom, email, password } = req.body
 
+        // 🔴 champs obligatoires
         if (!nom || !email || !password) {
-            return res.status(400).json({ message: "Champs manquants" })
+            return res.status(400).json({
+                message: "Champs manquants"
+            })
+        }
+
+        // 🔥 VALIDATION MOT DE PASSE AJOUTÉE
+        if (!password || password.trim().length < 4) {
+            return res.status(400).json({
+                message: "Mot de passe trop court"
+            })
         }
 
         const exist = await User.findOne({ email })
 
         if (exist) {
-            return res.status(400).json({ message: "Email déjà utilisé" })
+            return res.status(400).json({
+                message: "Email déjà utilisé"
+            })
         }
 
         const verificationToken = crypto.randomBytes(32).toString("hex")
 
-        // ✅ création propre (IMPORTANT)
         const user = new User({
             nom,
             email,
@@ -83,11 +94,12 @@ exports.inscription = async (req, res) => {
 
     } catch (err) {
         console.error("ERROR INSCRIPTION:", err)
-        return res.status(500).json({ message: "Erreur serveur" })
+        return res.status(500).json({
+            message: "Erreur serveur"
+        })
     }
 }
 
-// ================= VERIFICATION =================
 exports.verifyAccount = async (req, res) => {
     try {
         const { token } = req.params
@@ -98,37 +110,32 @@ exports.verifyAccount = async (req, res) => {
             verificationToken: token
         })
 
-        
-        if (user) {
-            user.isVerified = true
-            user.verificationToken = undefined
-
-            await user.save()
-
-            console.log("COMPTE ACTIVÉ ✔")
-
-            return res.redirect(`${process.env.FRONT_URL}/connexion.html`)
+        // 🔴 sécurité obligatoire
+        if (!user) {
+            return res.status(400).json({
+                message: "Lien invalide ou déjà utilisé"
+            })
         }
 
-       
-        const alreadyUser = await User.findOne({ email: req.body?.email })
+        user.isVerified = true
+        user.verificationToken = undefined
 
-        if (user.isVerified) {
-        return res.json({ message: "Compte déjà activé ✔" })
-        }
+        await user.save()
 
-       
-        return res.status(400).json({
-            message: "Lien invalide ou déjà utilisé"
-        })
+        console.log("COMPTE ACTIVÉ ✔")
+
+        return res.redirect(
+            `${process.env.FRONT_URL}/connexion.html`
+        )
 
     } catch (err) {
         console.error("VERIFY ERROR:", err)
-        return res.status(500).json({ message: "Erreur serveur" })
+        return res.status(500).json({
+            message: "Erreur serveur"
+        })
     }
 }
 
-// ================= CONNEXION =================
 exports.connexion = async (req, res) => {
     try {
         const { email, password } = req.body
@@ -136,7 +143,9 @@ exports.connexion = async (req, res) => {
         const user = await User.findOne({ email })
 
         if (!user) {
-            return res.status(404).json({ message: "Utilisateur introuvable" })
+            return res.status(404).json({
+                message: "Utilisateur introuvable"
+            })
         }
 
         if (!user.isVerified) {
@@ -148,7 +157,9 @@ exports.connexion = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password)
 
         if (!isMatch) {
-            return res.status(400).json({ message: "Mot de passe incorrect" })
+            return res.status(400).json({
+                message: "Mot de passe incorrect"
+            })
         }
 
         const token = jwt.sign(
@@ -164,6 +175,8 @@ exports.connexion = async (req, res) => {
 
     } catch (err) {
         console.error("LOGIN ERROR:", err)
-        return res.status(500).json({ message: "Erreur serveur" })
+        return res.status(500).json({
+            message: "Erreur serveur"
+        })
     }
 }
