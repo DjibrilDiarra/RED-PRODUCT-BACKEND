@@ -5,17 +5,9 @@ const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 
 // ================= INSCRIPTION =================
-
-
 exports.inscription = async (req, res) => {
     console.log("INSCRIPTION ROUTE OK")
-
-    console.log(" BODY REÇU:", req.body)
-console.log(" ENV:", {
-    MONGO: !!process.env.MONGO_URI,
-    BREVO: !!process.env.BREVO_API_KEY,
-    BASE_URL: process.env.BASE_URL
-})
+    console.log("BODY:", req.body)
 
     try {
         const { nom, email, password } = req.body
@@ -25,14 +17,15 @@ console.log(" ENV:", {
         }
 
         const exist = await User.findOne({ email })
+
         if (exist) {
             return res.status(400).json({ message: "Email déjà utilisé" })
         }
 
         const verificationToken = crypto.randomBytes(32).toString("hex")
 
-        // CREATE USER (password hash via model)
-        await User.create({
+        // ✅ création propre (IMPORTANT)
+        const user = new User({
             nom,
             email,
             password,
@@ -40,10 +33,15 @@ console.log(" ENV:", {
             isVerified: false
         })
 
-        console.log("USER CRÉÉ ✔")
+        await user.save()
 
-        // EMAIL (BREVO)
+        console.log("USER CRÉÉ ✔")
+        console.log("TOKEN:", user.verificationToken)
+
+        // ================= EMAIL =================
         try {
+            const verifyUrl = `${process.env.BASE_URL}/verify/${verificationToken}`
+
             await axios.post(
                 "https://api.brevo.com/v3/smtp/email",
                 {
@@ -58,7 +56,7 @@ console.log(" ENV:", {
                             <h2>Bienvenue ${nom}</h2>
                             <p>Clique pour activer ton compte :</p>
 
-                            <a href="${process.env.BASE_URL}/verify/${verificationToken}"
+                            <a href="${verifyUrl}"
                                style="display:inline-block;padding:10px 15px;background:green;color:white;text-decoration:none;border-radius:5px">
                                 Activer mon compte
                             </a>
@@ -84,28 +82,28 @@ console.log(" ENV:", {
         })
 
     } catch (err) {
-    console.error("FULL ERROR INSCRIPTION:", err)
-    console.error("STACK:", err.stack)
-
-    return res.status(500).json({
-        message: "Erreur serveur",
-        error: err.message,
-        stack: err.stack
-    })
-}
+        console.error("ERROR INSCRIPTION:", err)
+        return res.status(500).json({ message: "Erreur serveur" })
+    }
 }
 
-
-// ================= VERIFICATION EMAIL =================
-
+// ================= VERIFICATION =================
 exports.verifyAccount = async (req, res) => {
     try {
         const { token } = req.params
 
-        const user = await User.findOne({ verificationToken: token })
+        console.log("TOKEN REÇU:", token)
+
+        const user = await User.findOne({
+            verificationToken: token.trim()
+        })
+
+        console.log("USER TROUVÉ:", user)
 
         if (!user) {
-            return res.status(400).json({ message: "Lien invalide ou expiré" })
+            return res.status(400).json({
+                message: "Lien invalide ou déjà utilisé"
+            })
         }
 
         user.isVerified = true
@@ -115,11 +113,12 @@ exports.verifyAccount = async (req, res) => {
 
         console.log("COMPTE ACTIVÉ ✔")
 
-        // REDIRECTION FRONT PROPRE
-        return res.redirect(`${process.env.FRONT_URL}/connexion.html`)
+        return res.redirect(
+            `${process.env.FRONT_URL}/connexion.html`
+        )
 
     } catch (err) {
-        console.log("VERIFY ERROR:", err)
+        console.error("VERIFY ERROR:", err)
         return res.status(500).json({ message: "Erreur serveur" })
     }
 }
@@ -159,10 +158,7 @@ exports.connexion = async (req, res) => {
         })
 
     } catch (err) {
-        console.log("LOGIN ERROR:", err)
-        return res.status(500).json({
-            message: "Erreur serveur",
-            error: err.message
-        })
+        console.error("LOGIN ERROR:", err)
+        return res.status(500).json({ message: "Erreur serveur" })
     }
 }
